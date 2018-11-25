@@ -1,0 +1,120 @@
+---
+title: "Tidytuesday Malaria"
+output: html_notebook
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r echo=FALSE, warning=FALSE}
+library(tidyverse)
+library(lubridate)
+library(ggmap)
+library(countrycode)
+library(grid)
+library(gridExtra)
+```
+
+```{r, message=FALSE}
+malaria <- read_csv("malaria_deaths.csv") %>%
+  setNames(c("country", "code", "year", "deaths"))
+```
+
+How many countries are in the dataset? 
+
+```{r}
+malaria %>%
+  count(country)
+```
+
+Ok, we have around 27 datapoints for each country. 
+
+Let's see see which countries are especially plagued by malaria:
+
+```{r}
+(plagued_countries <- malaria %>%
+  group_by(country) %>%
+  summarise(
+    deaths = sum(deaths)
+  ) %>%
+  arrange(desc(deaths)) %>%
+  head)
+```
+
+Ok, Sierra Leone seems to be especially affected. Others are Burkina Faso, Uganda, Equatorial Guinea, Cote d'Ivoire, and Nigeria. 
+
+Let's plot the deaths for each country overall:
+
+```{r}
+world <- map_data("world")
+
+malaria_some_years <- malaria %>%
+  filter(year %in% c(1995, 2000, 2005, 2010))
+
+deaths_per_year <- malaria_some_years %>%
+  inner_join(iso3166 %>% select(a3, mapname), by = c(code = "a3")) %>%
+  left_join(world, by = c(country = "region"))
+
+ggplot(deaths_per_year, aes(long, lat, map_id = mapname, 
+                                                fill = deaths)) +
+  geom_map(map = world) +
+  scale_fill_gradient(low = "blue", high = "red") +
+  theme_void() +
+  coord_map(xlim = c(-180, 180)) +
+  labs(fill = "Deaths per year") +
+  facet_wrap(~ year, ncol = 2)
+```
+
+Let's only display Africa
+
+```{r}
+deaths_africa_per_year <- deaths_per_year %>%
+  mutate(
+    countrycode(deaths_per_year$mapname, 
+                origin = "country.name", 
+                destination = "continent")) %>%
+  rename(continent = `countrycode(...)`) %>%
+  filter(continent == "Africa")
+
+ggplot(deaths_africa_per_year, aes(long, lat, map_id = mapname, 
+                                   fill = deaths)) +
+  geom_map(map = world) +
+  scale_fill_gradient(low = "blue", high = "red") +
+  theme_void() +
+  coord_map(xlim = c(-80, 80)) +
+  labs(fill = "Deaths per year") +
+  facet_wrap(~ year, ncol = 2)
+```
+
+How did the deaths of malaria change globally since 1990? 
+
+```{r}
+malaria %>%
+  group_by(year) %>%
+  summarise(deaths = sum(deaths)) %>%
+  ggplot(aes(x = year, y = deaths)) +
+  geom_line() +
+  scale_y_continuous(limits = c(0, 4500)) +
+  scale_x_continuous(breaks = seq(1990, 2016, by = 5)) +
+  labs(title = "Malaria deaths per year worldwide",
+       y = "Deaths",
+       x = "Year")
+```
+
+Which countries actually improved the most over the past decades?
+
+```{r}
+malaria %>%
+  group_by(year, country) %>%
+  summarise(deaths = sum(deaths)) %>%
+  arrange(country, year) %>%
+  filter(country %in% plagued_countries$country) %>%
+  ungroup() %>%
+  mutate(
+    improvement = deaths - lag(deaths)
+  ) %>%
+  ggplot(aes(x = year, y = improvement, colour = country)) +
+  geom_line() +
+  ylab("Improvements (lower = better)")
+```
+
+
