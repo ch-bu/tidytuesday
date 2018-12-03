@@ -14,6 +14,7 @@ library(grid)
 library(gridExtra)
 ```
 
+
 ```{r, message=FALSE}
 malaria <- read_csv("malaria_deaths.csv") %>%
   setNames(c("country", "code", "year", "deaths"))
@@ -116,5 +117,4 @@ malaria %>%
   geom_line() +
   ylab("Improvements (lower = better)")
 ```
-
 

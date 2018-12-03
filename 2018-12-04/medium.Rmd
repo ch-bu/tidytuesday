@@ -1,0 +1,121 @@
+---
+title: "Untitled"
+output: pdf_document
+---
+
+```{r}
+library(tidyverse)
+library(lubridate)
+library(tidytext)
+library(hrbrthemes)
+
+medium <- read_csv("medium_datasci.csv")
+data(stop_words)
+```
+
+```{r}
+top_authors <- medium %>%
+  count(author, sort = TRUE) %>%
+  drop_na() %>%
+  head(n = 10)
+
+words_authors <- medium %>% 
+  select(author, title, year, month, day) %>%
+  unite("date", c("year", "month", "day"), sep = "-") %>%
+  mutate(
+    date = ymd(date)
+  ) %>%
+  unnest_tokens(word, title) %>%
+  anti_join(stop_words) %>%
+  filter(!str_detect(word, "\\d")) 
+```
+
+Which top words do the top authors use in their titles? 
+
+```{r}
+words_authors %>%
+  filter(author %in% top_authors$author) %>%
+  count(word, author, sort = TRUE) %>%
+  group_by(author) %>%
+  arrange(desc(n)) %>%
+  slice(1:10) %>% 
+  ungroup() %>%
+  ggplot(aes(word, y = n)) +
+  geom_col() +
+  facet_wrap(~ author, scales = "free") +
+  coord_flip() +
+  theme_ipsum() +
+  ggtitle("Most frequent words of the top contributing authors")
+```
+
+How do the top 2 authors differ in their use of words? 
+
+```{r}
+words_authors %>%
+  filter(author %in% top_authors$author[1:2]) %>%
+  count(author, word) %>%
+  group_by(author) %>%
+  mutate(
+    proportion = n / sum(n)
+  ) %>%
+  select(-n) %>%
+  filter(proportion < 0.04) %>%
+  spread(author, proportion) %>%
+  drop_na() %>%
+  ggplot(aes(x = Synced, y = `Yves Mulkers`)) +
+  geom_point(alpha = .8) +
+  geom_text(aes(label = word, vjust = -1.2, check_overlap = TRUE)) +
+  geom_abline(intercept = 0, slope = 1, lty = 2) +
+  xlim(0, .025) +
+  ylim(0, .025) +
+  theme_ipsum() +
+  ggtitle("How do the top two contributing authors differ in their choice of words?")
+```
+
+How did the frequency of the most popular words changed in the last year? 
+
+```{r}
+top_50_words <- words_authors %>%
+  count(word, sort = TRUE) %>% 
+  slice(1:10) %>%
+  pull(word)
+  
+words_authors %>%
+  filter(word %in% top_50_words) %>%
+  select(-author) %>%
+  mutate(
+    week = floor_date(date, "week")
+  ) %>%
+  select(-date) %>%
+  count(word, week) %>%
+  ggplot(aes(x = week, y = n, color = word)) +
+  geom_line() +
+  theme_ipsum() +
+  xlab("Date") +
+  ylab("Frequency") +
+  labs(color = "Word") +
+  ggtitle("Frequency of most popular words in the last year")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
