@@ -75,13 +75,13 @@ words_authors %>%
 How did the frequency of the most popular words changed in the last year? 
 
 ```{r}
-top_50_words <- words_authors %>%
+top_10_words <- words_authors %>%
   count(word, sort = TRUE) %>% 
   slice(1:10) %>%
   pull(word)
   
 words_authors %>%
-  filter(word %in% top_50_words) %>%
+  filter(word %in% top_10_words) %>%
   select(-author) %>%
   mutate(
     week = floor_date(date, "week")
