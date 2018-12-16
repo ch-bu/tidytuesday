@@ -1,0 +1,107 @@
+---
+title: "Untitled"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(tidytext)
+library(hrbrthemes)
+library(lubridate)
+theme_set(theme_ipsum())
+```
+
+```{r}
+restaurants <- read_csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2018-12-11/nyc_restaurants.csv")
+```
+
+What do the inspections usually complain about when they raise a critical flag? 
+
+```{r}
+common_critique <- restaurants %>%
+  # filter(critical_flag == "Critical") %>%
+  select(camis, dba, cuisine_description,
+         critical_flag,
+         inspection_date, action,
+         score, grade, inspection_type,
+         violation_description) %>%
+  unnest_tokens(word, violation_description) %>%
+  anti_join(stop_words, by = "word") %>%
+  count(word, critical_flag, sort = TRUE) %>%
+  group_by(critical_flag) %>%
+  slice(1:20) %>%
+  ungroup() %>% 
+  drop_na(word) %>%
+  mutate(word = as.factor(word))
+
+common_critique %>%
+  ggplot(aes(x = critical_flag, y = fct_reorder(word, n))) + 
+  geom_point(aes(size = n)) +
+  labs(x = "Type of critical flag",
+       y = "Common words to describe violoation description",
+       title = "Common words to describe violations per critical flag")
+```
+
+Did the number of inspections change over time? 
+
+```{r}
+restaurants_cleaned_dates <- restaurants %>%
+  mutate(
+    inspection_date = inspection_date %>% parse_date_time("%m/%d/%y"),
+    month = inspection_date %>% round_date("month")
+  )
+
+restaurants_cleaned_dates %>%
+  count(month) %>%
+  filter(month >= as.Date("2014-01-01")) %>%
+  ggplot(aes(month, n)) +
+  geom_area(fill = "#93856a") +
+  labs(
+    x = "Month",
+    y = "Number of inspections",
+    title = "Number of inspections of NYC restaurants since 2014"
+  )
+  
+```
+
+Is there a difference in the types of restaurants when it comes to scoring? 
+
+```{r}
+restaurants %>%
+  group_by(cuisine_description) %>%
+  summarise(
+    mean_grading = mean(score, na.rm = TRUE),
+    n = n()
+  ) %>%
+  filter(n > 100) %>%
+  arrange(desc(mean_grading)) %>%
+  mutate(
+    median_split = (mean_grading > median(mean_grading)) %>%
+      as.factor %>% fct_rev %>%
+      fct_recode(`Best Scoring` = "TRUE", `Worst Scoring` = "FALSE"),
+    cuisine_description = as.factor(cuisine_description)
+  ) %>%
+  # group_by(median_split) %>%
+  filter(row_number() < 10 | row_number() > nrow(.) - 10) %>%
+  # slice(1:10) %>%
+  # ungroup() %>%
+  ggplot(aes(x = fct_reorder(cuisine_description, mean_grading), y = mean_grading)) +
+  geom_col(aes(fill = mean_grading)) +
+  coord_flip() +
+  facet_wrap(~ median_split, scales = "free") +
+  scale_fill_gradient(high = "#1a9850",
+                       low = "#d73027") +
+  labs(
+    x = "Mean scoring",
+    y = "Cuisine type",
+    title = "10 best and 10 worst cuisine types according to inspection scores",
+    fill = "Mean scoring"
+  ) +
+  theme(legend.position = "bottom")
+```
+
+
