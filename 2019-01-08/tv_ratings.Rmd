@@ -1,0 +1,166 @@
+---
+title: "Untitled"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+# library(ggrepel)
+library(lubridate)
+library(scales)
+library(hrbrthemes)
+theme_set(theme_ipsum())
+tv_ratings <- read_csv("https://github.com/rfordatascience/tidytuesday/raw/master/data/2019/2019-01-08/IMDb_Economist_tv_ratings.csv")
+```
+
+```{r}
+bk_color <- "#252525"
+grey_color <- "#565656"
+tv_ratings_separated <- tv_ratings %>%
+  separate(genres, c("Genre1", "Genre2", "Genre3"), sep = ",")
+```
+
+How did the number of genres change in the past years? 
+
+```{r}
+genres_gathered <- tv_ratings_separated %>%
+  select(date, Genre1:Genre3) %>%
+  gather(number, genre, -date) %>%
+  select(-number) %>%
+  mutate(year = year(date)) %>%
+  mutate(year = 5 * floor(year / 5)) %>%
+  drop_na()
+
+movies_per_year <- genres_gathered %>%
+  count(year)
+
+labs_genre <- genres_gathered %>%
+  count(genre, year) %>%
+  filter(year == "1990") %>%
+  filter(
+    genre %in% c("Drama", "Crime",
+                 "Mytery", "Comedy",
+                 "Action", "Romance")
+  ) %>%
+  mutate(
+    percent = n / 237
+  )
+
+genres_gathered %>%
+  count(genre, year) %>%
+  left_join(movies_per_year, by = "year") %>%
+  filter(
+    genre %in% c("Drama", "Crime",
+                 "Mytery", "Comedy",
+                 "Action", "Romance")
+  ) %>%
+  mutate(
+    percent = n.x / n.y
+  ) %>%
+  drop_na() %>%
+  ggplot(aes(x = year, y = percent, color = genre)) + 
+  geom_line(size = 1) +
+  geom_point(size = 4) +
+  geom_text_repel(data = labs_genre, aes(x = year, y = percent, 
+                                         label = genre, color = genre),
+                  nudge_y = .03, nudge_x = -5,
+                  fontface = "bold", size = rel(4)) +
+  theme_ipsum() +
+  scale_y_continuous(labels = percent_format(), position = "right") +
+  # scale_color_viridis(discrete = TRUE, option = "magma") +
+  scale_color_manual(values = c("#a6611a", "#dfc27d", 
+                                "#f5f5f5", "#80cdc1", 
+                                "#018571")) +
+  labs(
+    x = "Year", 
+    y = "Percent %",
+    title = "Life is a drama",
+    subtitle = "The proportion of genres within the last 28 years",
+    caption = "All years have been rounded down to the nearest 5 years\ndata: ImDb | graphic: Christian Burkhart",
+    color = "Genre"
+  ) +
+  theme(
+    plot.subtitle = element_text(vjust = 1, color ="beige"), 
+    plot.caption = element_text(vjust = 1, color = grey_color),
+    plot.title = element_text(colour = "beige"),
+    axis.title = element_text(colour = "beige"), 
+    axis.text = element_text(colour = "beige"), 
+    legend.text = element_text(colour = "beige"), 
+    legend.title = element_text(colour = "beige"), 
+    plot.background = element_rect(fill = bk_color), 
+    panel.grid.minor.x = element_line(colour = bk_color),
+    panel.grid.minor.y = element_line(colour = bk_color),
+    panel.grid.major.x = element_line(colour = "#393939"),
+    panel.grid.major.y = element_line(colour = bk_color),
+    strip.text.x = element_blank(),
+    legend.background = element_rect(fill = bk_color, 
+        colour = bk_color),
+    legend.position = "none"
+  ) 
+```
+
+How did the top seasons average rating change over time? 
+
+```{r}
+top_shows <- c("Game of Thrones",
+               "Breaking Bad",
+               "The Bing Bang Theory",
+               "Law & Order",
+               "Downton Abbey",
+               "The West Wing",
+               "Doctor Who",
+               "The X-Files",
+               "Sherlock",
+               "The Sopranos") 
+
+top_shows_filtered <- tv_ratings %>%
+  filter(title %in% top_shows)
+
+labs <- top_shows_filtered %>% 
+  group_by(title) %>% 
+  filter(row_number(title) == 1)
+
+
+top_shows_filtered %>%
+  ggplot(aes(x = date, y = av_rating)) + 
+  geom_point(data = select(top_shows_filtered,-title), 
+             colour = grey_color) +
+  geom_smooth(data = select(top_shows_filtered,-title), 
+              method = "lm", se = F, 
+            color = grey_color, size = 0.5) + 
+  geom_smooth(method = "lm", se = F, 
+              color = "#14c3a5") + 
+  geom_line(aes(group = title), color = "#c31432") +
+  geom_point(color = "#c31432") + 
+  geom_text_repel(data = labs, aes(x = date, y = av_rating, label = title),
+                  color = "beige", inherit.aes = FALSE, nudge_y = -.15,
+                  fontface = "bold", size = rel(4)) +
+  facet_wrap(~ title) +
+  theme(
+    plot.subtitle = element_text(vjust = 1), 
+    plot.caption = element_text(vjust = 1, color = grey_color),
+    axis.title = element_text(colour = grey_color), 
+    axis.text = element_text(colour = grey_color), 
+    plot.title = element_text(colour = "beige"), 
+    legend.text = element_text(colour = "beige"), 
+    legend.title = element_text(colour = "beige"), 
+    plot.background = element_rect(fill = bk_color), 
+    panel.grid.minor.x = element_line(colour = bk_color),
+    panel.grid.minor.y = element_line(colour = bk_color),
+    panel.grid.major.x = element_line(colour = bk_color),
+    panel.grid.major.y = element_line(colour = bk_color),
+    strip.text.x = element_blank(),
+    legend.background = element_rect(fill = bk_color, 
+        colour = bk_color)
+  ) +
+  scale_y_continuous(limits = c(7, 10), breaks = c(7, 8, 9, 10)) +
+  scale_x_date(date_breaks = "9 year", date_labels = "%Y") +
+  labs(
+    x = "Year", 
+    y = "Average rating",
+    title = "The average rating of the top series of the last 28 years",
+    caption = "data: ImDb | graphic: Christian Burkhart"
+  )
+```
+
+
