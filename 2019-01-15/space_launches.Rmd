@@ -1,0 +1,86 @@
+---
+title: "Untitled"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(lubridate)
+library(ggridges)
+library(viridis)
+
+launches <- read_csv("launches.csv")
+agencies <- read_csv("agencies.csv")
+
+bk_color <- "#252525"
+grey_color <- "#565656"
+```
+
+
+Wann wurden die beliebesten Raketen verwendet? 
+
+```{r}
+top_10_types <- launches %>%
+  count(type, sort = TRUE) %>%
+  slice(1:6) %>%
+  pull(type)
+
+launches %>%
+  mutate(
+    quarter = launch_date %>% floor_date("quarter"),
+    new_state_code = case_when(
+      state_code == "SU" ~ "Russia/UDSSR",
+      state_code == "RU" ~ "Russia/UDSSR",
+      state_code == "US" ~ "United States",
+      state_code == "F" ~  "France",
+      TRUE ~ state_code
+    ),
+    type = type %>% fct_relevel("Voskhod 11A57", 
+                                "Molniya 8K78M",
+                                "Kosmos 11K65M",
+                                "Soyuz-U",
+                                "Space Shuttle",
+                                "Soyuz-U-PVB")
+  ) %>%
+  filter(type %in% top_10_types) %>%
+  ggplot(aes(x = quarter, y = type)) +
+  geom_density_ridges(rel_min_height = 0.01, scale = 6,
+                      alpha = .9,
+                      aes(fill = new_state_code)) +
+  guides(color = FALSE) +
+  labs(
+    title = "The most popular space aircrafts",
+    caption = "graphic: Christian Burkhart",
+    y = "Type",
+    x = "Year",
+    fill = "Countries"
+  ) +
+  scale_fill_manual(values = c("#40E0D0", "#FF8C00", "#FF0080")) +
+  theme(
+      plot.subtitle = element_text(vjust = 1),
+      plot.margin = unit(c(1, 1, 1, 1), "cm"),
+      text = element_text(family = "DejaVu Sans, Condensed Bold"),
+      plot.caption = element_text(vjust = 1, color = grey_color),
+      axis.title = element_text(colour = "beige"), 
+      axis.text = element_text(colour = "beige"), 
+      plot.title = element_text(colour = "beige",
+                          face = "bold"), 
+      legend.text = element_text(colour = "beige"), 
+      legend.background = element_rect(fill = bk_color),
+      legend.key = element_rect(fill = "transparent", 
+                                colour = "transparent"),
+      legend.position = c(0.07, 0.7), 
+      legend.title = element_text(colour = "beige"), 
+      plot.background = element_rect(fill = bk_color), 
+      panel.background = element_blank(),
+      panel.grid.minor = element_line(colour = bk_color),
+      # panel.grid.minor.y = element_line(colour = bk_color),
+      panel.grid.major.x = element_line(colour = bk_color),
+      panel.grid.major.y = element_line(colour = grey_color)
+    )
+```
+
