@@ -46,9 +46,9 @@ board_games %>%
   labs(
     x = "Year",
     y = "Average rating",
-    title = "Average rating of the\nmost prolific game board game designers",
+    title = "Average rating of the\nmost prolific board game designers",
     caption = "graphic: Christian Burkhart",
-    subtitle = "These 5 people have played a major role in the board game industry\nover the past 50 years. The grey points represent the average rating\nof all board games. The color lines the average rating\nof each designer per year."
+    subtitle = "These 5 people have played a major role in the board game industry\nover the past 50 years. The grey points represent the average rating\nof all board games. The color lines represent the average rating\nof each designer per year."
   ) +
   theme(
     panel.grid.major = element_blank(),
