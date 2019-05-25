@@ -47,48 +47,63 @@ ggplot(data, aes(x = waste, y = mismanaged_plastic)) +
   geom_ribbon(mapping = aes(x = x, ymax = y, ymin = 0), fill = "#fceaea",
               data = good_guys_data, inherit.aes = FALSE,
               alpha = .6) +
-  geom_ribbon(mapping = aes(x = x, ymax = ymax, ymin = ymin), fill = "#fad5d5",
+  geom_ribbon(mapping = aes(x = x, ymax = ymax, ymin = ymin), fill = "#f39696",
               data = medium_guys_data, inherit.aes = FALSE,
               alpha = .6) +
   geom_ribbon(mapping = aes(x = x, ymax = ymax, ymin = ymin), fill = "#e72d2d",
               data = bad_guys_data, inherit.aes = FALSE,
               alpha = .7) +
-  geom_point(aes(size = gdp), show.legend = FALSE, alpha = .8, color = "#170404") +
-  annotate("text", family = "Open Sans", color = "#170404",
+  annotate("segment", x = 0.223, xend = 0.223, y = 0, yend = 0.178, 
+           color = "#515151", linetype = 2) +
+  annotate("segment", x = 0.223, xend = 0.75, y = 0.178, yend = 0.184, 
+           color = "#515151", linetype = 2) +
+  geom_point(show.legend = FALSE, alpha = .8, size = 3,
+             color = "#969696", pch = 21, fill = "#cacaca") +
+  annotate("text", family = "Open Sans", color = "#2e0909",
            x = 0.41, y = 0.39,  hjust = 0, fontface = 2, size = 7,
            label = "70% to 100%") +
   annotate("text", family = "Open Sans",
-           x = 0.53, y = 0.29,  hjust = 0, fontface = 2, size = 7,
+           x = 0.53, y = 0.30,  hjust = 0, fontface = 2, size = 7,
            label = "40% to 70%") +
   annotate("text", family = "Open Sans",
-           x = 0.60, y = 0.13,  hjust = 0, fontface = 2, size = 7,
+           x = 0.60, y = 0.15,  hjust = 0, fontface = 2, size = 7,
            label = "0% to 40%") +
+  annotate("segment", x = 0.17, xend = 0.21, y = 0.22, yend = 0.19, 
+           color = "#515151") +
+  annotate("text", family = "Open Sans",
+           x = 0.06, y = 0.25,  hjust = 0, size = 3.5,
+           label = "For example, a person in Tonga\nproduces 0.22 kg of\nplastic waste per day,\n0.18 kg of which is not\nproperly disposed of") +
   geom_text_repel(family = "Open Sans", aes(label = entity), 
                   fontface = "italic",
                   data = data_bad_countries, color = "#170404") +
   geom_text_repel(family = "Open Sans", aes(label = entity), 
                   fontface = "italic",
                   data = data_good_guys, color = "#170404") +
-  coord_cartesian(ylim = c(0, 0.5), xlim = c(0, 0.75)) +
+  coord_cartesian(ylim = c(0, 0.5), xlim = c(0, 0.72)) +
   scale_x_continuous(labels = function(x) paste(x, "kg")) +
+  scale_y_continuous(labels = function(x) paste(x, "kg"), position = "right") +
   theme(
     plot.background = element_rect(fill = "white"),
     panel.background = element_rect(fill = "white"),
-    plot.margin = unit(c(1,1,1,1), "cm"),
-    axis.title.y=element_blank(),
-    axis.text.y=element_blank(),
-    axis.ticks.y=element_blank(),
-    axis.text.x = element_text(size = 12),
-    axis.ticks.x = element_blank(),
-    axis.title.x = element_text(margin = margin(t = 15, b = 15),
-                                size = 12, family = "Open Sans"),
     plot.title = element_text(family = "Open Sans", face = "bold",
                               hjust = 0, margin = margin(t = 20, b = 10), size = 30),
     plot.subtitle = element_text(family = "Open Sans", color = "#515151",
-                                 hjust = 0, margin = margin(b = -140), size = 23)
+                                 hjust = 0, margin = margin(b = -140), size = 23),
+    plot.margin = unit(c(1, 2, 1, 1), "cm"),
+    axis.text.y.right = element_text(size = 10, family = "Open Sans", margin = margin(r = 20)),
+    axis.text.x = element_text(size = 10, family = "Open Sans"),
+    axis.ticks.x = element_blank(),
+    axis.ticks.y = element_blank(),
+    axis.title.x = element_text(margin = margin(t = 15, b = 15),
+                                color = "#515151", hjust = 1,
+                                size = 10, family = "Open Sans"),
+    axis.title.y = element_text(size = 10, family = "Open Sans", 
+                                color = "#515151", hjust = 0)
+
   ) +
   labs(
     x = "Amout of plastic waste per capita in kg/day",
+    y = "Not properly disposed plastic waste per capita in kg/day",
     title = "Who doesn't care\nabout plastic waste?",
     subtitle = "Percentage of plastic waste\nthat is not properly disposed of,\nper country"
   )
